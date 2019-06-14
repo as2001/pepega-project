@@ -6,4 +6,5 @@
   <li> Phong shading </li>
   <li> Multiple lighs </li>
   <li> Ambient command </li>
+  <li> Wireframe shading </li>
 </ol>

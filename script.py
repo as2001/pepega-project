@@ -112,7 +112,6 @@ def run(filename):
 
     tmp = new_matrix()
     ident( tmp )
-
     
     step_3d = 100
     consts = ''
@@ -173,6 +172,8 @@ def run(filename):
                 tmp = []
             elif c == 'light':
                 lights.append(command['light'])
+            elif c == 'ambient':
+                ambient = args
             elif c == 'move':
                 if command["knob"]:
                     knob = frames[i][command["knob"]]                

@@ -2,6 +2,8 @@
 <p> Andrew Shao </p>
 <p> Features implemented: </p>
 <ol> 
-  <li> Gouraud shading </li>
+  <li> <strike> Gouraud shading </strike> not working at the moment </li>
   <li> Phong shading </li>
+  <li> Multiple lighs </li>
+  <li> Ambient command </li>
 </ol>

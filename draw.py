@@ -1,6 +1,7 @@
 from display import *
 from matrix import *
 from gmath import *
+import random
 
 def draw_scanline(x0, z0, x1, z1, y, screen, zbuffer, shading, c0 = None, c1 = None,
                   n0 = None, n1 = None, view = None, ambient = None, lights = None, symbols = None, reflect = None ):
@@ -169,7 +170,21 @@ def draw_polygons( polygons, screen, zbuffer, view, ambient, lights, symbols, re
         return
 
     normals = {}
-    point = 0   
+    point = 0
+
+    if shading == 'wireframe':        
+        while point < len(polygons) - 2:
+            
+            normal = calculate_normal(polygons, point)[:]
+
+            #print normal
+            if normal[2] > 0:
+                color = [random.randint(0,255),random.randint(0,255),random.randint(0,255)]
+                c0,c1,c2 = polygons[point],polygons[point+1],polygons[point+2]
+                draw_line(c0[0], c0[1], c0[2], c1[0], c1[1], c1[2],screen,zbuffer,color)
+                draw_line(c1[0], c1[1], c1[2], c2[0], c2[1], c2[2],screen,zbuffer,color)
+                draw_line(c2[0], c2[1], c2[2], c0[0], c0[1], c0[2],screen,zbuffer,color)
+            point+= 3       
 
     if shading == 'flat':
         while point < len(polygons) - 2:
@@ -480,7 +495,7 @@ def draw_line( x0, y0, z0, x1, y1, z1, screen, zbuffer, color ):
     dz = (z1 - z0) / distance if distance != 0 else 0
 
     while ( loop_start < loop_end ):
-        plot( screen, zbuffer, color, x, y, z )
+        plot( screen, zbuffer, color, int(x), int(y), int(z) )
         if ( (wide and ((A > 0 and d > 0) or (A < 0 and d < 0))) or
              (tall and ((A > 0 and d < 0) or (A < 0 and d > 0 )))):
 
@@ -493,4 +508,4 @@ def draw_line( x0, y0, z0, x1, y1, z1, screen, zbuffer, color ):
             d+= d_east
         z+= dz
         loop_start+= 1
-    plot( screen, zbuffer, color, x, y, z )
+    plot( screen, zbuffer, color, int(x), int(y), int(z) )

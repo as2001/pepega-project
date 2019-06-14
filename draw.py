@@ -3,7 +3,7 @@ from matrix import *
 from gmath import *
 
 def draw_scanline(x0, z0, x1, z1, y, screen, zbuffer, shading, c0 = None, c1 = None,
-                  n0 = None, n1 = None, view = None, ambient = None, light = None, symbols = None, reflect = None ):
+                  n0 = None, n1 = None, view = None, ambient = None, lights = None, symbols = None, reflect = None ):
     
     if x0 > x1:
         tx = x0
@@ -27,23 +27,24 @@ def draw_scanline(x0, z0, x1, z1, y, screen, zbuffer, shading, c0 = None, c1 = N
     if shading == 'gouraud':
         limit_color(c0)
         limit_color(c1)   
-        c = [i for i in c0]
-        dc = [(c1[i]-c0[i])/ (x1 - x0 + 1) if (x1 - x0 + 1) != 0 else 0 for i in range(3)]
+        c = [int(i) for i in c0]
+        dc = [(c1[i]-c0[i]) / (x1 - x0 + 1) if (x1 - x0 + 1) != 0 else 0 for i in range(3)]
     elif shading == 'phong':
         n = [i for i in n0]
         dn = [(n1[i]-n0[i]) / (x1 - x0 + 1) if (x1 - x0 + 1) != 0 else 0 for i in range(3)]
     delta_z = (z1 - z0) / (x1 - x0 + 1) if (x1 - x0 + 1) != 0 else 0
 
+    
     while x <= x1:
         if shading == 'flat':
             plot(screen, zbuffer, c0, x, y, z)
         elif shading == 'gouraud':
-            limit_color([int(c[i]) for i in range (3)])
+            limit_color([int(c[i]) for i in range(3)])
             plot(screen, zbuffer, c, x, y, z)
             for i in range(3):
                 c[i] += dc[i]
         elif shading == 'phong':
-            plot(screen, zbuffer, get_lighting(n,view,ambient,light,symbols,reflect), x, y, z)
+            plot(screen, zbuffer, get_lighting(n,view,ambient,lights,symbols,reflect), x, y, z)
             for i in range(3):
                 n[i] += dn[i]
         
@@ -53,7 +54,7 @@ def draw_scanline(x0, z0, x1, z1, y, screen, zbuffer, shading, c0 = None, c1 = N
                                  
 
 def scanline_convert(polygons, i, screen, zbuffer, shading, color,
-                     normals = None, view = None, ambient = None, light = None, symbols = None, reflect = None):
+                     normals = None, view = None, ambient = None, lights = None, symbols = None, reflect = None):
     flip = False
     BOT = 0
     TOP = 2
@@ -77,17 +78,17 @@ def scanline_convert(polygons, i, screen, zbuffer, shading, color,
     y = int(points[BOT][1])
 
     if shading != 'flat':
-        BOTnorm = normals[(points[BOT][0],points[BOT][1],points[BOT][2])]
-        MIDnorm = normals[(points[MID][0],points[MID][1],points[MID][2])]
-        TOPnorm = normals[(points[TOP][0],points[TOP][1],points[TOP][2])]
+        BOTnorm = normals[tuple(points[BOT])]
+        MIDnorm = normals[tuple(points[MID])]
+        TOPnorm = normals[tuple(points[TOP])]
         if shading == 'gouraud':
-            BOTcolor = get_lighting(BOTnorm, view, ambient, light, symbols, reflect)
-            MIDcolor = get_lighting(MIDnorm, view, ambient, light, symbols, reflect)
-            TOPcolor = get_lighting(TOPnorm, view, ambient, light, symbols, reflect)
+            BOTcolor = get_lighting(BOTnorm, view, ambient, lights, symbols, reflect)
+            MIDcolor = get_lighting(MIDnorm, view, ambient, lights, symbols, reflect)
+            TOPcolor = get_lighting(TOPnorm, view, ambient, lights, symbols, reflect)
             c0 = [i for i in BOTcolor]
             c1 = [i for i in BOTcolor]
             BctoTc = [TOPcolor[i] - BOTcolor[i] for i in range(3)]
-            BctoMc = [MIDcolor[i] - BOTcolor[i] for i in range(3)]  
+            BctoMc = [MIDcolor[i] - BOTcolor[i] for i in range(3)]
             MctoTc = [TOPcolor[i] - MIDcolor[i] for i in range(3)]
         elif shading == 'phong':
             BntoTn = [TOPnorm[i] - BOTnorm[i] for i in range(3)]
@@ -100,6 +101,11 @@ def scanline_convert(polygons, i, screen, zbuffer, shading, color,
     distance0 = int(points[TOP][1]) - y * 1.0 + 1
     distance1 = int(points[MID][1]) - y * 1.0 + 1
     distance2 = int(points[TOP][1]) - int(points[MID][1]) * 1.0 + 1
+    if shading == 'gouraud':
+        if distance0 == 0:
+            c1 = [i for i in TOPcolor]
+        elif distance1 == 0:
+            c1 = [i for i in MIDcolor]
 
     if shading == 'gouraud':
         dc0 = [BctoTc[i]/distance0 if distance0!=0 else 0 for i in range(3)]
@@ -124,7 +130,7 @@ def scanline_convert(polygons, i, screen, zbuffer, shading, color,
                 c0[i] += dc0[i]
                 c1[i] += dc1[i]
         elif shading == 'phong':
-            draw_scanline(int(x0),z0,int(x1),z1,y,screen,zbuffer,'phong',None,None,n0,n1,view,ambient,light,symbols,reflect)
+            draw_scanline(int(x0),z0,int(x1),z1,y,screen,zbuffer,'phong',None,None,n0,n1,view,ambient,lights,symbols,reflect)
             for i in range(3):
                 n0[i]+=dn0[i]
                 n1[i]+=dn1[i]
@@ -140,14 +146,15 @@ def scanline_convert(polygons, i, screen, zbuffer, shading, color,
 
             dx1 = (points[TOP][0] - points[MID][0]) / distance2 if distance2 != 0 else 0
             dz1 = (points[TOP][2] - points[MID][2]) / distance2 if distance2 != 0 else 0
-
-            if shading == 'gouraud':
-                dc1 = [MctoTc[i]/distance2 if distance2!=0 else 0 for i in range(3)]
-            elif shading == 'phong':
-                dn1 = [MntoTn[i]/distance2 if distance2!=0 else 0 for i in range(3)]
             
             x1 = points[MID][0]
             z1 = points[MID][2]
+
+            if shading == 'gouraud':
+                dc1 = [MctoTc[i]/distance2 if distance2!=0 else 0 for i in range(3)]
+                c1 = [i for i in MIDcolor]
+            elif shading == 'phong':
+                dn1 = [MntoTn[i]/distance2 if distance2!=0 else 0 for i in range(3)]
 
 
 
@@ -156,7 +163,7 @@ def add_polygon( polygons, x0, y0, z0, x1, y1, z1, x2, y2, z2 ):
     add_point(polygons, x1, y1, z1)
     add_point(polygons, x2, y2, z2)
 
-def draw_polygons( polygons, screen, zbuffer, view, ambient, light, symbols, reflect, shading):
+def draw_polygons( polygons, screen, zbuffer, view, ambient, lights, symbols, reflect, shading):
     if len(polygons) < 2:
         print 'Need at least 3 points to draw'
         return
@@ -171,7 +178,7 @@ def draw_polygons( polygons, screen, zbuffer, view, ambient, light, symbols, ref
 
             #print normal
             if normal[2] > 0:
-                color = get_lighting(normal, view, ambient, light, symbols, reflect )
+                color = get_lighting(normal, view, ambient, lights, symbols, reflect )
                 scanline_convert(polygons, point, screen, zbuffer, 'flat', color)
             point+= 3               
     elif shading == 'gouraud' or shading == 'phong':     
@@ -198,9 +205,9 @@ def draw_polygons( polygons, screen, zbuffer, view, ambient, light, symbols, ref
                                  
             if normal[2] > 0:
                 if shading == 'gouraud':
-                    scanline_convert(polygons, point, screen, zbuffer, 'gouraud', None, normals, view, ambient, light, symbols, reflect)
+                    scanline_convert(polygons, point, screen, zbuffer, 'gouraud', None, normals, view, ambient, lights, symbols, reflect)
                 elif shading == 'phong':
-                    scanline_convert(polygons, point, screen, zbuffer, 'phong', None, normals, view, ambient, light, symbols, reflect)
+                    scanline_convert(polygons, point, screen, zbuffer, 'phong', None, normals, view, ambient, lights, symbols, reflect)
             point+= 3
 
 

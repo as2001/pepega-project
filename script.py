@@ -94,18 +94,17 @@ def run(filename):
     ambient = [50,
                50,
                50]
-    light = [[0.5,
-              0.75,
-              1],
-             [255,
-              255,
-              255]]
+
+    symbols['.def_light'] = ['light',
+                            {'color' : [255, 255, 255],
+                             'location': [0.5, 0.75, 1]}]
 
     color = [0, 0, 0]
     symbols['.white'] = ['constants',
                          {'red': [0.2, 0.5, 0.5],
                           'green': [0.2, 0.5, 0.5],
                           'blue': [0.2, 0.5, 0.5]}]
+    light = '.def_light'
     reflect = '.white'
 
     (name, num_frames, shading, is_anim) = first_pass(commands)
@@ -127,36 +126,43 @@ def run(filename):
         screen = new_screen()
         zbuffer = new_zbuffer()
         tmp = []
+        lights = []
         for command in commands:   
             c = command['op']
             args = command['args']
             knob = 1
             if c == 'box':
+                if not lights:
+                    lights.append(light)
                 if command['constants']:
                     reflect = command['constants']
                 add_box(tmp,
                         args[0], args[1], args[2],
                         args[3], args[4], args[5])
                 matrix_mult( stack[-1], tmp )
-                draw_polygons(tmp, screen, zbuffer, view, ambient, light, symbols, reflect, shading)
+                draw_polygons(tmp, screen, zbuffer, view, ambient, lights, symbols, reflect, shading)
                 tmp = []
                 reflect = '.white'
             elif c == 'sphere':
+                if not lights:
+                    lights.append(light)
                 if command['constants']:
                     reflect = command['constants']
                 add_sphere(tmp,
                            args[0], args[1], args[2], args[3], step_3d)
                 matrix_mult( stack[-1], tmp )
-                draw_polygons(tmp, screen, zbuffer, view, ambient, light, symbols, reflect, shading)
+                draw_polygons(tmp, screen, zbuffer, view, ambient, lights, symbols, reflect, shading)
                 tmp = []
                 reflect = '.white'
             elif c == 'torus':
+                if not lights:
+                    lights.append(light)
                 if command['constants']:
                     reflect = command['constants']
                 add_torus(tmp,
                           args[0], args[1], args[2], args[3], args[4], step_3d)
                 matrix_mult( stack[-1], tmp )
-                draw_polygons(tmp, screen, zbuffer, view, ambient, light, symbols, reflect, shading)
+                draw_polygons(tmp, screen, zbuffer, view, ambient, lights, symbols, reflect, shading)
                 tmp = []
                 reflect = '.white'
             elif c == 'line':
@@ -165,6 +171,8 @@ def run(filename):
                 matrix_mult( stack[-1], tmp )
                 draw_lines(tmp, screen, zbuffer, color)
                 tmp = []
+            elif c == 'light':
+                lights.append(command['light'])
             elif c == 'move':
                 if command["knob"]:
                     knob = frames[i][command["knob"]]                
@@ -204,7 +212,8 @@ def run(filename):
                     
         if is_anim:
             num = format(i, "03")
-            save_extension(screen, "anim/" + name + num + ".png")
+            print(num)
+            save_extension(screen, "anim/" + name + num)
 
     if is_anim:
         try:

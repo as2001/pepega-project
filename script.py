@@ -24,8 +24,10 @@ def first_pass( commands ):
     shading = 'flat'
     hasf = False
     hasv = False
+    is_anim = False
     for command in commands:
         if command['op'] == 'frames':
+            is_anim = True
             hasf = True
             num_frames = int(command['args'][0])
         if command['op'] == 'basename':
@@ -36,7 +38,7 @@ def first_pass( commands ):
             shading = command['shade_type']
     if hasv and not hasf:
         exit()
-    return (name, num_frames, shading)
+    return (name, num_frames, shading, is_anim)
 
 """======== second_pass( commands ) ==========
 
@@ -106,7 +108,7 @@ def run(filename):
                           'blue': [0.2, 0.5, 0.5]}]
     reflect = '.white'
 
-    (name, num_frames, shading) = first_pass(commands)
+    (name, num_frames, shading, is_anim) = first_pass(commands)
     frames = second_pass(commands, num_frames)
 
     tmp = new_matrix()
@@ -197,10 +199,17 @@ def run(filename):
                 stack.pop()
             elif c == 'display':
                 display(screen)
-        num = format(i, "03")
-        save_extension(screen, "anim/" + name + num + ".png")
-            # end operation loop
-    try:
-        make_animation(name)
-    except:
-        print('Failed')
+            elif c == 'save':
+                save_extension(screen,args[0])
+                    
+        if is_anim:
+            num = format(i, "03")
+            save_extension(screen, "anim/" + name + num + ".png")
+
+    if is_anim:
+        try:
+            make_animation(name)
+        except:
+            print('Failed')
+
+    
